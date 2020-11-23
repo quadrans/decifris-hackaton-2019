@@ -11,7 +11,16 @@ contract GreenPayment {
         uint front;
         uint back;
     }
+
+    mapping(address => Person) people;
+    Queue market;
+
+    constructor() public {
+        addMarket(msg.sender);
+    }
     
+    event Sent(address ad);
+
     /// @dev the number of elements stored in the queue.
     function length(Queue storage q) internal view returns (uint) {
         return q.back - q.front;
@@ -36,15 +45,8 @@ contract GreenPayment {
         delete q.ad[q.front];
         q.front = (q.front + 1) % q.ad.length;
     }
-    
-    
-    
    
-    mapping(address => Person) people;
-    Queue market;
-    
-    
-     function QueueUserMayBeDeliveryDroneControl() private {
+    function QueueUserMayBeDeliveryDroneControl() private {
         market.ad.length = 200;
     }
     
@@ -62,11 +64,6 @@ contract GreenPayment {
     
     ///////////////////
     
-    
-    constructor() public {
-        addMarket(msg.sender);
-    }
-    
     function insertion (address ad) public payable {
         require(people[ad].seller==true, "non può vendere");
         require(people[ad].tot>=msg.value, "non ha abbastanza crediti");
@@ -74,7 +71,6 @@ contract GreenPayment {
             addMarket(ad);
         }
     }
-    
     
     function buying (address ad) public payable{
         require(msg.value<=queueLength(), "Non ci sono abbastanza crediti nel sistema");
@@ -86,16 +82,10 @@ contract GreenPayment {
         emit Sent(ad);
     }
     
-    
-    event Sent(address ad);
-    
-    //supponiamo che il venditore conosca un segreto condiviso precedentemente con il gestore dello smart contract
-    //e che invii un messaggio cifrato con RSA
-    //il segreto è il numero 100
-    //i venditori sono a conoscenza della chiave rsa (733763, 541079)
-    //quindi possono autenticarsi cifrando il messaggio 100 con la chiave
-    
-    
+    //  @dev suppose that the seller knows a secret previously shared with
+    //  the smart contract manager and sends an encrypted message with RSA
+    //  the secret is the number 100 the sellers know the rsa key (733763, 541079)
+    //  so they can authenticate themselves by encrypting the message 100 with the key
     function verify (uint value, address ad) public payable {
         uint dec=(value^23)%733763;
         require(dec==100, "autenticazione non valida");

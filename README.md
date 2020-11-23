@@ -10,6 +10,5 @@ only, though on a first-come first-served basis (places are limited).
 The event will be hosted by Department of Computer Science @UniMi (Aula Magna A.Bertoni, Via Celoria
 18, Milano), Department of Mathematics @UniTn and FBK (Sala Consiglio, Via Sommarive 18, Povo, Trento).
 
-
 Participants in the hackathon have to register through the following link: https://www.decifris.it/
 Contact person: Andrea Visconti (andrea.visconti@unimi.it)
