@@ -3,58 +3,48 @@ contract GreenPayment {
     
     struct Person {
         bool seller;
-        uint tot;
+        uint tot; // numero crediti green acquistati
     }
     
     struct Queue {
-        address[] ad ;
+        address payable[] ad;
         uint front;
         uint back;
     }
-
-    mapping(address => Person) people;
-    Queue market;
-
-    constructor() public {
-        addMarket(msg.sender);
-    }
     
-    event Sent(address ad);
-
     /// @dev the number of elements stored in the queue.
     function length(Queue storage q) internal view returns (uint) {
         return q.back - q.front;
     }
+
     /// @dev the number of elements this queue can hold
     function capacity(Queue storage q) internal view  returns (uint) {
         return q.ad.length - 1;
     }
+
     /// @dev push a new element to the back of the queue
-    function push(Queue storage q, address ad) internal
+    function push(Queue storage q,  address payable ad) internal
     {
         if ((q.back + 1) % q.ad.length == q.front)
             return; // throw;
         q.ad[q.back] = ad;
         q.back = (q.back + 1) % q.ad.length;
     }
+
     /// @dev remove and return the element at the front of the queue
-    function pop(Queue storage q) internal returns (address ad)
+    function pop(Queue storage q) internal returns (address payable ad)
     {
         require(q.back != q.front, "Coda vuota");
         ad = q.ad[q.front];
         delete q.ad[q.front];
         q.front = (q.front + 1) % q.ad.length;
     }
-   
-    function QueueUserMayBeDeliveryDroneControl() private {
-        market.ad.length = 200;
-    }
     
-    function addMarket(address d) private {
+    function addMarket(address payable d) private {
         push(market, d);
     }
     
-    function popMarket() private returns (address) {
+    function popMarket() internal returns (address payable) {
         return pop(market);
     }
     
@@ -62,35 +52,61 @@ contract GreenPayment {
         return length(market);
     }
     
-    ///////////////////
-    
-    function insertion (address ad) public payable {
+    mapping(address => Person) public people;
+    Queue public market;
+    uint price = 10**18; // price of a green energy credit WEI
+
+    constructor() public {
+        address payable[] memory b=new address payable[](100);
+        market=Queue(b,0,0);
+    }
+
+    //selling: if ad is a seller, push amount credits in the market
+    function selling (uint amount, address payable ad) public payable {
         require(people[ad].seller==true, "non può vendere");
-        require(people[ad].tot>=msg.value, "non ha abbastanza crediti");
-        for(uint i=1;i<=msg.value;i++) {
+        require(amount+queueLength()<=100, "Non c'è abbastanza spazio sul mercato");
+        for(uint i=1;i<=amount;i++) {
             addMarket(ad);
         }
+       
     }
     
-    function buying (address ad) public payable{
-        require(msg.value<=queueLength(), "Non ci sono abbastanza crediti nel sistema");
-        for(uint i=1;i<msg.value;i++) {
-            address a=popMarket();
-            people[a].tot-=1;
+    //buying: pops the first amount of credits from the market, sets the value tot associated to the buyer to tot:=tot+amount. The buyer pays the seller for the credits he bought.
+    function buying (uint amount) public payable{
+        require(amount<=queueLength(), "Non ci sono abbastanza crediti nel sistema");
+        for(uint i=0;i<amount;i++) {
+            address payable venditore = popMarket();
+            venditore.transfer(price);
+            //pagare l'indirizzo a un tot di ether
         }
-        people[ad].tot+=msg.value;
-        emit Sent(ad);
+        msg.sender.transfer(msg.value - (price*amount));
+        people[msg.sender].tot+=amount;
+        //emit Sent(ad);
+    }
+        
+    //used to compute powers of big numbers
+    function power(int a, int b, int m) internal returns (int){
+        int res = 1;
+        a = a % m;
+        if (a == 0) {return 0;}
+        while (b > 0){
+            if(b & 1 == 1){
+                res = (res * a) % m;
+            }
+            b = b >> 1;
+            a = (a*a) % m;
+        }
+         return res;
     }
     
-    //  @dev suppose that the seller knows a secret previously shared with
-    //  the smart contract manager and sends an encrypted message with RSA
-    //  the secret is the number 100 the sellers know the rsa key (733763, 541079)
-    //  so they can authenticate themselves by encrypting the message 100 with the key
-    function verify (uint value, address ad) public payable {
-        uint dec=(value^23)%733763;
-        require(dec==100, "autenticazione non valida");
-        people[ad].seller=true;
-        people[ad].tot=100;
+    //verify: takes as input a uint and a address (which wants to authenticate as a seller), if the authentication is valid the function sets seller=true.
+    function verify (int v, address payable ad) public {
+        if (people[ad].seller == false){
+            int dec = power (v, 23, 733763);
+            require(dec==100, "autenticazione non valida");
+            people[ad].seller=true;
+        }
     }
+    
     
 }
