@@ -47,4 +47,4 @@ Participants in the hackathon have to register through the following
 
 - link: https://www.decifris.it/
 
-- Contact person: Andrea Visconti (andrea.visconti@unimi.it)
+- Contact person: Andrea Visconti
